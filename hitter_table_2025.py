@@ -3,7 +3,7 @@ import pandas as pd
 
 # Load datasets
 fall_csv = "filtered_fall_trackman.csv"
-winter_csv = "WINTER_ALL_TRACKMAN.csv"
+winter_csv = "WINTER_ALL_trackman.csv"
 spring_csv = "Spring Intrasquads MASTER.csv"
 
 def load_data():

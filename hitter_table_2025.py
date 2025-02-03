@@ -13,8 +13,8 @@ def load_data():
     
     # Add a season column for filtering
     fall_df["Season"] = "Fall"
-winter_df["Season"] = "Winter"
-spring_df["Season"] = "Spring Preseason"
+    winter_df["Season"] = "Winter"
+    spring_df["Season"] = "Spring Preseason"
     
     # Combine all data
     df = pd.concat([fall_df, winter_df, spring_df], ignore_index=True)

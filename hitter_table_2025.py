@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 
 # Load datasets
-fall_csv = "FINAL FALL CSV 2024 - filtered_fall_trackman (1).csv"
+fall_csv = "filtered_fall_trackman.csv"
 winter_csv = "WINTER_ALL_TRACKMAN.csv"
 spring_csv = "Spring Intrasquads MASTER.csv"
 

@@ -81,6 +81,13 @@ hitters_df['3B'] = df[df['PlayResult'] == 'Triple'].groupby('Batter').size().res
 hitters_df['HR'] = df[df['PlayResult'] == 'HomeRun'].groupby('Batter').size().reset_index(name='HR')['HR']
 hitters_df = hitters_df.fillna(0)
 
+# Calculate at-bats (AB)
+bip_counts = df[df['PitchCall'] == 'InPlay'].groupby('Batter').size().reset_index(name='BIP')
+k_counts = df[df['KorBB'] == 'Strikeout'].groupby('Batter').size().reset_index(name='K')
+hitters_df = pd.merge(hitters_df, bip_counts, on='Batter', how='left').fillna(0)
+hitters_df = pd.merge(hitters_df, k_counts, on='Batter', how='left').fillna(0)
+hitters_df['AB'] = hitters_df['BIP'] + hitters_df['K'] - hitters_df['Sacrifice']
+
 # Calculate advanced stats
 hitters_df['TotalBases'] = hitters_df['1B'] + (2 * hitters_df['2B']) + (3 * hitters_df['3B']) + (4 * hitters_df['HR'])
 hitters_df['SLG'] = hitters_df['TotalBases'] / hitters_df['AB']

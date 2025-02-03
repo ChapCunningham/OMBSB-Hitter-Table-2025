@@ -82,9 +82,20 @@ hitters_df = pd.merge(hitters_df, walk_counts, on='Batter', how='left').fillna(0
 strikeout_counts = df[df['KorBB'] == 'Strikeout'].groupby('Batter').size().reset_index(name='K')
 hitters_df = pd.merge(hitters_df, strikeout_counts, on='Batter', how='left').fillna(0)
 
+# Additional computed statistics
 hitters_df['AB'] = hitters_df['BIP'] + hitters_df['K'] - hitters_df['Sacrifice']
 hitters_df['AVG'] = hitters_df['Hits'] / hitters_df['AB']
 hitters_df['OBP'] = (hitters_df['Hits'] + hitters_df['Walks'] + hitters_df['HBP']) / hitters_df['PA']
+hitters_df['OPS'] = hitters_df['OBP'] + (hitters_df['Hits'] * 1.5)
+
+# Exit Velocity Stats
+inplay_data = df[df['PitchCall'] == 'InPlay']
+ev_stats = inplay_data.groupby('Batter').agg(
+    EV=('ExitSpeed', 'mean'),
+    EV_90th=('ExitSpeed', lambda x: x.quantile(0.9)),
+    maxEV=('ExitSpeed', 'max')
+).reset_index()
+hitters_df = pd.merge(hitters_df, ev_stats, on='Batter', how='left').fillna(0)
 
 # Display the DataFrame
 st.title("Hitter Performance Table")

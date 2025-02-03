@@ -69,24 +69,22 @@ hitters_df = pd.merge(hitters_df, sacrifice_counts, on='Batter', how='left').fil
 hitters_df = pd.merge(hitters_df, error_counts, on='Batter', how='left').fillna(0)
 hitters_df = pd.merge(hitters_df, hbp_counts, on='Batter', how='left').fillna(0)
 
+# Hits breakdown
 hit_conditions = df['PlayResult'].isin(['Single', 'Double', 'Triple', 'HomeRun'])
 hit_counts = df[hit_conditions].groupby('Batter').size().reset_index(name='Hits')
 hitters_df = pd.merge(hitters_df, hit_counts, on='Batter', how='left').fillna(0)
 
-bip_counts = df[df['PitchCall'] == 'InPlay'].groupby('Batter').size().reset_index(name='BIP')
-hitters_df = pd.merge(hitters_df, bip_counts, on='Batter', how='left').fillna(0)
+# Specific hit types
+hitters_df['1B'] = df[df['PlayResult'] == 'Single'].groupby('Batter').size().reset_index(name='1B')['1B']
+hitters_df['2B'] = df[df['PlayResult'] == 'Double'].groupby('Batter').size().reset_index(name='2B')['2B']
+hitters_df['3B'] = df[df['PlayResult'] == 'Triple'].groupby('Batter').size().reset_index(name='3B')['3B']
+hitters_df['HR'] = df[df['PlayResult'] == 'HomeRun'].groupby('Batter').size().reset_index(name='HR')['HR']
+hitters_df = hitters_df.fillna(0)
 
-walk_counts = df[df['KorBB'] == 'Walk'].groupby('Batter').size().reset_index(name='Walks')
-hitters_df = pd.merge(hitters_df, walk_counts, on='Batter', how='left').fillna(0)
-
-strikeout_counts = df[df['KorBB'] == 'Strikeout'].groupby('Batter').size().reset_index(name='K')
-hitters_df = pd.merge(hitters_df, strikeout_counts, on='Batter', how='left').fillna(0)
-
-# Additional computed statistics
-hitters_df['AB'] = hitters_df['BIP'] + hitters_df['K'] - hitters_df['Sacrifice']
-hitters_df['AVG'] = hitters_df['Hits'] / hitters_df['AB']
-hitters_df['OBP'] = (hitters_df['Hits'] + hitters_df['Walks'] + hitters_df['HBP']) / hitters_df['PA']
-hitters_df['OPS'] = hitters_df['OBP'] + (hitters_df['Hits'] * 1.5)
+# Calculate advanced stats
+hitters_df['TotalBases'] = hitters_df['1B'] + (2 * hitters_df['2B']) + (3 * hitters_df['3B']) + (4 * hitters_df['HR'])
+hitters_df['SLG'] = hitters_df['TotalBases'] / hitters_df['AB']
+hitters_df['OPS'] = hitters_df['OBP'] + hitters_df['SLG']
 
 # Exit Velocity Stats
 inplay_data = df[df['PitchCall'] == 'InPlay']

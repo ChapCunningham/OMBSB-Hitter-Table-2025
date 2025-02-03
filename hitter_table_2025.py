@@ -1,0 +1,90 @@
+import streamlit as st
+import pandas as pd
+
+# Load datasets
+fall_csv = "FINAL FALL CSV 2024 - filtered_fall_trackman (1).csv"
+winter_csv = "WINTER_ALL_TRACKMAN.csv"
+spring_csv = "Spring Intrasquads MASTER.csv"
+
+def load_data():
+    fall_df = pd.read_csv(fall_csv)
+    winter_df = pd.read_csv(winter_csv)
+    spring_df = pd.read_csv(spring_csv)
+    
+    # Add a season column for filtering
+    fall_df["Season"] = "Fall"
+winter_df["Season"] = "Winter"
+spring_df["Season"] = "Spring Preseason"
+    
+    # Combine all data
+    df = pd.concat([fall_df, winter_df, spring_df], ignore_index=True)
+    
+    # Filter for specified teams
+    df = df[df['BatterTeam'].isin(["OLE_REB", "OLE_PRA", "OLE_BULL"])]
+    
+    # Convert Date column to datetime
+    df['Date'] = pd.to_datetime(df['Date'])
+    
+    return df
+
+df = load_data()
+
+# Sidebar filters
+st.sidebar.title("Filters")
+season_options = ["All", "Fall", "Winter", "Spring Preseason"]
+selected_season = st.sidebar.selectbox("Select Season", season_options, index=0)
+
+def filter_season(df, season):
+    if season != "All":
+        return df[df["Season"] == season]
+    return df
+
+df = filter_season(df, selected_season)
+
+# Date range selection
+date_min = df['Date'].min()
+date_max = df['Date'].max()
+selected_dates = st.sidebar.date_input(
+    "Select Date Range",
+    [date_min, date_max],
+    min_value=date_min,
+    max_value=date_max
+)
+
+if isinstance(selected_dates, list) and len(selected_dates) == 2:
+    start_date, end_date = selected_dates
+    df = df[(df['Date'] >= pd.to_datetime(start_date)) & (df['Date'] <= pd.to_datetime(end_date))]
+
+# Group data by Batter and calculate stats
+pa_counts = df[df['PitchofPA'] == 1].groupby('Batter').size().reset_index(name='PA')
+pitch_counts = df.groupby('Batter').size().reset_index(name='TotalPitches')
+hitters_df = pd.merge(pitch_counts, pa_counts, on='Batter', how='left')
+
+# Additional stats calculations
+sacrifice_counts = df[df['PlayResult'] == 'Sacrifice'].groupby('Batter').size().reset_index(name='Sacrifice')
+error_counts = df[df['PlayResult'] == 'Error'].groupby('Batter').size().reset_index(name='Error')
+hbp_counts = df[df['PitchCall'] == 'HitByPitch'].groupby('Batter').size().reset_index(name='HBP')
+hitters_df = pd.merge(hitters_df, sacrifice_counts, on='Batter', how='left').fillna(0)
+hitters_df = pd.merge(hitters_df, error_counts, on='Batter', how='left').fillna(0)
+hitters_df = pd.merge(hitters_df, hbp_counts, on='Batter', how='left').fillna(0)
+
+hit_conditions = df['PlayResult'].isin(['Single', 'Double', 'Triple', 'HomeRun'])
+hit_counts = df[hit_conditions].groupby('Batter').size().reset_index(name='Hits')
+hitters_df = pd.merge(hitters_df, hit_counts, on='Batter', how='left').fillna(0)
+
+bip_counts = df[df['PitchCall'] == 'InPlay'].groupby('Batter').size().reset_index(name='BIP')
+hitters_df = pd.merge(hitters_df, bip_counts, on='Batter', how='left').fillna(0)
+
+walk_counts = df[df['KorBB'] == 'Walk'].groupby('Batter').size().reset_index(name='Walks')
+hitters_df = pd.merge(hitters_df, walk_counts, on='Batter', how='left').fillna(0)
+
+strikeout_counts = df[df['KorBB'] == 'Strikeout'].groupby('Batter').size().reset_index(name='K')
+hitters_df = pd.merge(hitters_df, strikeout_counts, on='Batter', how='left').fillna(0)
+
+hitters_df['AB'] = hitters_df['BIP'] + hitters_df['K'] - hitters_df['Sacrifice']
+hitters_df['AVG'] = hitters_df['Hits'] / hitters_df['AB']
+hitters_df['OBP'] = (hitters_df['Hits'] + hitters_df['Walks'] + hitters_df['HBP']) / hitters_df['PA']
+
+# Display the DataFrame
+st.title("Hitter Performance Table")
+st.dataframe(hitters_df.style.set_sticky())

@@ -22,8 +22,9 @@ def load_data():
     # Filter for specified teams
     df = df[df['BatterTeam'].isin(["OLE_REB", "OLE_PRA", "OLE_BULL"])]
     
-    # Convert Date column to datetime
-    df['Date'] = pd.to_datetime(df['Date'])
+    # Convert Date column to datetime, handling different formats
+    df['Date'] = pd.to_datetime(df['Date'], errors='coerce', format='%Y-%m-%d')
+    df['Date'] = df['Date'].fillna(pd.to_datetime(df['Date'], errors='coerce', format='%m/%d/%y'))
     
     return df
 
